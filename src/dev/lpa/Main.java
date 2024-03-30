@@ -1,8 +1,6 @@
 package dev.lpa;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 
 public class Main {
@@ -38,6 +36,38 @@ public class Main {
         // single acct
         // assume cr will have exactly one checking and one savings
 
+class Bank{
+    private int routingNumber;
+    private long lastTransactionId;
+    private Map<String, BankCustomer> customers;
+
+    public BankCustomer getCustomer(String id){
+        BankCustomer foundCustomer = customers.get(id);
+
+        if(foundCustomer != null){
+            return new BankCustomer(foundCustomer.getName(), 0, 0);
+        }
+
+        return null;
+    }
+
+    public void addCustomer (String name, double checkingInitialDeposit, double savingsInitialDeposit){
+        customers.put("DJFISODS", new BankCustomer(name, checkingInitialDeposit, savingsInitialDeposit));
+    }
+
+    public void doTransaction (String id, BankAccount.AccountType type, double amount){
+
+        BankCustomer myCustomer = customers.get(id);
+
+        if (myCustomer != null){
+            myCustomer.
+        }
+
+    }
+
+
+}
+
 // Bank class
     // Can look up cr by customerID
     // routingNumber: int
@@ -61,12 +91,33 @@ public class Main {
     // So, mn shouldn't have access to the commit transaction code on BA itself.
 
 
+
+
 class BankAccount {
 
     public enum AccountType {CHECKING, SAVINGS}
 
     private final AccountType accountType;
-    private final double balance;
+    private double balance;
+
+    // keyed by transactionID
+    private Map<Long, Transaction> transactions = new LinkedHashMap<>();
+
+    public Map<Long, Transaction> getTransactions() {
+        Map<Long, Transaction> tCopy = new HashMap<>();
+
+        for (Long transactionID : transactions.keySet()){
+            Transaction originalTxn = transactions.get(transactionID);
+
+            Transaction copyTxn = new Transaction(originalTxn.getRoutingNUmber(), originalTxn.getCustomerId(),
+                    originalTxn.getTransactionId(),
+                    originalTxn.getTransactionAmount());
+
+            tCopy.put(transactionID, copyTxn);
+        }
+
+        return tCopy;
+    }
 
     BankAccount(AccountType accountType, double balance) {
         this.accountType = accountType;
@@ -81,35 +132,126 @@ class BankAccount {
         return balance;
     }
 
+    public void commitTransaction(int routingNumber, long transactionId, int customerID, double amount){
+
+        if (amount > balance){
+            return;
+        }
+
+        amount += balance;
+
+        Transaction newTxn = new Transaction(routingNumber, customerID, transactionId, amount);
+
+        transactions.put(transactionId, newTxn);
+    }
+
     @Override
     public String toString() {
         return "%s $%.2f".formatted(accountType, balance);
     }
 }
 
+class Transaction {
+    static int TRANSACTION_ID = 100000;
+
+    private int routingNUmber;
+    private int customerId;
+    private long transactionId;
+    private double transactionAmount;
+
+    public int getRoutingNUmber() {
+        return routingNUmber;
+    }
+
+    public void setRoutingNUmber(int routingNUmber) {
+        this.routingNUmber = routingNUmber;
+    }
+
+    public int getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(int customerId) {
+        this.customerId = customerId;
+    }
+
+    public long getTransactionId() {
+        return transactionId;
+    }
+
+    public void setTransactionId(long transactionId) {
+        this.transactionId = transactionId;
+    }
+
+    public double getTransactionAmount() {
+        return transactionAmount;
+    }
+
+    public void setTransactionAmount(double transactionAmount) {
+        this.transactionAmount = transactionAmount;
+    }
+
+    public Transaction(int routingNUmber, int customerId, long transactionId, double transactionAmount) {
+        this.routingNUmber = routingNUmber;
+        this.customerId = customerId;
+        this.transactionId = transactionId;
+        this.transactionAmount = transactionAmount;
+    }
+
+
+}
+
+
+// Modify BC
+// getCustomerID:String; customerID is 15 digit string with leading zeros
+// Code in other packages can't instantiate a new BC
+// getAccounts: List<BankAccount>
+// Return defensive copy of accounts
+// multipe accts
+// getAccount(AccountType type): Account
+// single acct
+// assume cr will have exactly one checking and one savings
 
 class BankCustomer {
 
     private static int lastCustomerId = 10_000_000;
 
     private final String name;
-    private final int customerId;
+    private final String customerId;
     private final List<BankAccount> accounts = new ArrayList<>();
 
     public BankCustomer(String name, double checkingAmount, double savingsAmount) {
         this.name = name;
-        this.customerId = lastCustomerId++;
+        this.customerId = "fjsfiodapfjsaiof";
         accounts.add(new BankAccount(BankAccount.AccountType.CHECKING, checkingAmount));
         accounts.add(new BankAccount(BankAccount.AccountType.SAVINGS, savingsAmount));
     }
+
+
 
     public String getName() {
         return name;
     }
 
     public List<BankAccount> getAccounts() {
-        return new ArrayList<>(accounts);
+        List<BankAccount> defCopyAccounts = new ArrayList<>();
+
+        for (BankAccount acct : accounts){
+            defCopyAccounts.add(new BankAccount(acct.getAccountType(), acct.getBalance()));
+        }
+
+        return defCopyAccounts;
     }
+
+    public BankAccount getAccount (BankAccount.AccountType accountType){
+        for (BankAccount acct : accounts){
+            if (acct.getAccountType() == accountType){
+                return new BankAccount(accountType, acct.getBalance());
+            }
+        }
+        return null;
+    }
+
 
     @Override
     public String toString() {
